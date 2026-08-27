@@ -5,25 +5,21 @@ import zipfile
 import io
 
 NETLIFY_TOKEN = os.environ.get('NETLIFY_TOKEN')
+VERCEL_TOKEN = os.environ.get('VERCEL_TOKEN')
 DB_NAME = 'harvested.db'
 
+# --- NETLIFY DEPLOYMENT ---
 def deploy_to_netlify(subdomain, cname_target):
-    # Netlify replaces dots with dashes in their generated subdomains.
-    # If DNS points to "app.startup.io.netlify.app", Netlify site name is "app-startup-io"
-    # We extract the subdomain part before ".netlify.app"
     if '.netlify.app' not in cname_target:
         return False
         
-    # Extract the part before .netlify.app
     base_name = cname_target.split('.netlify.app')[0]
-    # Netlify site names can't have dots, must use dashes
     site_name = base_name.replace('.', '-')
     
     headers = {
         'Authorization': f'Bearer {NETLIFY_TOKEN}'
     }
 
-    # 1. Create the site on Netlify
     print(f"[*] Creating Netlify site: {site_name}")
     site_url = "https://api.netlify.com/api/v1/sites"
     site_payload = {'name': site_name}
@@ -31,14 +27,12 @@ def deploy_to_netlify(subdomain, cname_target):
     try:
         res = requests.post(site_url, headers=headers, json=site_payload)
         if res.status_code != 200 and res.status_code != 201:
-            print(f"[-] Failed to create site {site_name}: {res.text}")
             return False
             
         site_data = res.json()
         site_id = site_data['id']
         print(f"[+] Site created. ID: {site_id}")
 
-        # 2. Create a ZIP file in memory containing our template.html
         print("[*] Building deployment payload...")
         zip_buffer = io.BytesIO()
         with zipfile.ZipFile(zip_buffer, 'a', zipfile.ZIP_DEFLATED, False) as zip_file:
@@ -48,7 +42,6 @@ def deploy_to_netlify(subdomain, cname_target):
         
         zip_buffer.seek(0)
 
-        # 3. Deploy the ZIP file to the new site
         print("[*] Deploying payload...")
         deploy_url = f"https://api.netlify.com/api/v1/sites/{site_id}/deploys"
         deploy_headers = {
@@ -59,7 +52,7 @@ def deploy_to_netlify(subdomain, cname_target):
         deploy_res = requests.post(deploy_url, headers=deploy_headers, data=zip_buffer.read())
         
         if deploy_res.status_code == 200 or deploy_res.status_code == 201:
-            print(f"🔥 DEPLOY SUCCESS: {subdomain}")
+            print(f"🔥 DEPLOY SUCCESS (Netlify): {subdomain}")
             return True
         else:
             print(f"[-] Deploy failed: {deploy_res.text}")
@@ -69,9 +62,73 @@ def deploy_to_netlify(subdomain, cname_target):
         print(f"[-] Error deploying {subdomain}: {e}")
         return False
 
+# --- VERCEL DEPLOYMENT ---
+def deploy_to_vercel(subdomain, cname_target):
+    if '.vercel.app' not in cname_target:
+        return False
+
+    # Vercel project names cannot contain dots. e.g., app.startup.vercel.app -> app-startup
+    base_name = cname_target.split('.vercel.app')[0]
+    project_name = base_name.replace('.', '-')
+
+    headers = {
+        'Authorization': f'Bearer {VERCEL_TOKEN}',
+        'Content-Type': 'application/json'
+    }
+
+    print(f"[*] Creating Vercel project: {project_name}")
+    project_url = "https://api.vercel.com/v10/projects"
+    project_payload = {'name': project_name}
+    
+    try:
+        res = requests.post(project_url, headers=headers, json=project_payload)
+        if res.status_code != 200 and res.status_code != 201:
+            print(f"[-] Failed to create Vercel project {project_name}: {res.text}")
+            return False
+            
+        project_data = res.json()
+        project_id = project_data['id']
+        print(f"[+] Project created. ID: {project_id}")
+
+        # Build ZIP in memory
+        print("[*] Building deployment payload...")
+        zip_buffer = io.BytesIO()
+        with zipfile.ZipFile(zip_buffer, 'a', zipfile.ZIP_DEFLATED, False) as zip_file:
+            with open('template.html', 'r', encoding='utf-8') as f:
+                file_content = f.read()
+            zip_file.writestr('index.html', file_content)
+        
+        zip_buffer.seek(0)
+
+        # Deploy via Vercel API using ZIP
+        print("[*] Deploying payload to Vercel...")
+        deploy_url = "https://api.vercel.com/v13/deployments"
+        deploy_headers = {
+            'Authorization': f'Bearer {VERCEL_TOKEN}',
+            'Content-Type': 'application/zip'
+        }
+        params = {
+            'name': project_name,
+            'target': 'production'
+        }
+        
+        deploy_res = requests.post(deploy_url, headers=deploy_headers, params=params, data=zip_buffer.read())
+        
+        if deploy_res.status_code == 200 or deploy_res.status_code == 201:
+            print(f"🔥 DEPLOY SUCCESS (Vercel): {subdomain}")
+            return True
+        else:
+            print(f"[-] Vercel Deploy failed: {deploy_res.text}")
+            return False
+
+    except Exception as e:
+        print(f"[-] Vercel Error deploying {subdomain}: {e}")
+        return False
+
+# --- MAIN ROUTER ---
 def main():
-    if not NETLIFY_TOKEN:
-        print("[-] NETLIFY_TOKEN environment variable not found.")
+    if not NETLIFY_TOKEN and not VERCEL_TOKEN:
+        print("[-] No API tokens found.")
         return
 
     conn = sqlite3.connect(DB_NAME)
@@ -88,7 +145,16 @@ def main():
         subdomain = target[0]
         cname_target = target[1]
         
-        success = deploy_to_netlify(subdomain, cname_target)
+        # Route to the correct hoster
+        if '.netlify.app' in cname_target and NETLIFY_TOKEN:
+            success = deploy_to_netlify(subdomain, cname_target)
+        elif '.vercel.app' in cname_target and VERCEL_TOKEN:
+            success = deploy_to_vercel(subdomain, cname_target)
+        else:
+            # Unsupported hoster (github.io, surge.sh, etc.) - skip for now
+            c.execute("UPDATE subdomains SET status='deploy_skipped' WHERE subdomain=?", (subdomain,))
+            conn.commit()
+            continue
         
         if success:
             c.execute("UPDATE subdomains SET status='deployed' WHERE subdomain=?", (subdomain,))
@@ -99,6 +165,10 @@ def main():
 
     conn.close()
     print("[*] Deployment run complete.")
+
+if __name__ == "__main__":
+    main()
+
 
 if __name__ == "__main__":
     main()
