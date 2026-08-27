@@ -1,4 +1,4 @@
-name: Subdomain Scanner Cron
+
 
 on:
   schedule:
