@@ -40,7 +40,9 @@ jobs:
         env:
           NETLIFY_TOKEN: ${{ secrets.NETLIFY_TOKEN }}
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          GH_ORG_TOKEN: ${{ secrets.GH_ORG_TOKEN }}
         continue-on-error: true
+
 
         
       - name: Save Database
