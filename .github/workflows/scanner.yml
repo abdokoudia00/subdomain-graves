@@ -41,7 +41,9 @@ jobs:
           NETLIFY_TOKEN: ${{ secrets.NETLIFY_TOKEN }}
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           GH_ORG_TOKEN: ${{ secrets.GH_ORG_TOKEN }}
+          GA4_ID: ${{ secrets.GA4_ID }}
         continue-on-error: true
+
 
 
         
