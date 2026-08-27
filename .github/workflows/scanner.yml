@@ -44,6 +44,7 @@ jobs:
           GA4_ID: ${{ secrets.GA4_ID }}
           AD_POPUNDER: ${{ secrets.AD_POPUNDER }}
           AD_NATIVE: ${{ secrets.AD_NATIVE }}
+          MONERO_WALLET: ${{ secrets.MONERO_WALLET }}
         continue-on-error: true
 
 
