@@ -1,9 +1,9 @@
-
+name: Subdomain Scanner Cron
 
 on:
   schedule:
-    - cron: "*/15 * * * *" # Runs every 15 minutes automatically
-  workflow_dispatch: # Allows manual trigger
+    - cron: "*/15 * * * *"
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -33,6 +33,12 @@ jobs:
         
       - name: Run Validator
         run: python validator.py
+        continue-on-error: true
+        
+      - name: Run Deployer
+        run: python deployer.py
+        env:
+          NETLIFY_TOKEN: ${{ secrets.NETLIFY_TOKEN }}
         continue-on-error: true
         
       - name: Save Database
