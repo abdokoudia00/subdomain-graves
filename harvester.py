@@ -4,7 +4,12 @@ import time
 import requests.exceptions
 
 def fetch_crt_sh_logs():
-    url = "https://crt.sh/?q=%25.io&output=json"
+        # Rotate TLDs to avoid timeout and catch different startups every run
+    import random
+    tlds = ['%.io', '%.ai', '%.co', '%.app', '%.dev', '%.net']
+    chosen_tld = random.choice(tlds)
+    url = f"https://crt.sh/?q={chosen_tld}&output=json"
+    print(f"[*] Scanning TLD: {chosen_tld}")
     headers = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
     }
