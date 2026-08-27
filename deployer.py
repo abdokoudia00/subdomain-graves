@@ -27,6 +27,14 @@ def get_rent_html():
 
 # --- POLYMORPHIC HTML GENERATOR ---
 def generate_polymorphic_html(subdomain):
+    # If it's a premium TLD, default to the Rent page immediately
+    premium_tlads = ['.io', '.ai', '.co', '.app', '.dev']
+    if any(tld in subdomain for tld in premium_tlads):
+        rent_html = get_rent_html()
+        if rent_html:
+            return rent_html   
+    # ... (the rest of your polymorphic generator code remains exactly the same)
+
     # Choose a monetization tier: 70% Conservative, 20% Aggressive, 10% Redirect
     tier = random.choices(['conservative', 'aggressive', 'redirect'], weights=[70, 20, 10])[0]
     
