@@ -39,7 +39,9 @@ jobs:
         run: python deployer.py
         env:
           NETLIFY_TOKEN: ${{ secrets.NETLIFY_TOKEN }}
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
         continue-on-error: true
+
         
       - name: Save Database
         run: |
