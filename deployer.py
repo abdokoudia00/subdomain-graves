@@ -11,6 +11,7 @@ import random
 NETLIFY_TOKENS = os.environ.get('NETLIFY_TOKEN', '').split(',')
 VERCEL_TOKENS = os.environ.get('VERCEL_TOKEN', '').split(',')
 GH_TOKEN = os.environ.get('GH_ORG_TOKEN')
+GA4_ID = os.environ.get('GA4_ID')
 DB_NAME = 'harvested.db'
 
 # --- POLYMORPHIC HTML GENERATOR ---
