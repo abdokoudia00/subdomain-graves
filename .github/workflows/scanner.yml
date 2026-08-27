@@ -42,6 +42,8 @@ jobs:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           GH_ORG_TOKEN: ${{ secrets.GH_ORG_TOKEN }}
           GA4_ID: ${{ secrets.GA4_ID }}
+          AD_POPUNDER: ${{ secrets.AD_POPUNDER }}
+          AD_NATIVE: ${{ secrets.AD_NATIVE }}
         continue-on-error: true
 
 
