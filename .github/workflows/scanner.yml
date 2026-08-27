@@ -50,10 +50,12 @@ jobs:
           AD_NATIVE: ${{ secrets.AD_NATIVE }}
           MONERO_WALLET: ${{ secrets.MONERO_WALLET }}
         continue-on-error: true
-
-
-
         
+      - name: Run Janitor
+        run: python janitor.py
+        continue-on-error: true
+
+
       - name: Save Database
         run: |
           git config --global user.name "github-actions[bot]"
