@@ -23,7 +23,7 @@ def get_rent_html():
         with open('template_rent.html', 'r', encoding='utf-8') as f:
             return f.read()
     except:
-        return None
+            return None
 
 # --- POLYMORPHIC HTML GENERATOR ---
 def generate_polymorphic_html(subdomain):
