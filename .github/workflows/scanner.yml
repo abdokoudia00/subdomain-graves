@@ -2,7 +2,7 @@ name: Subdomain Scanner Cron
 
 on:
   schedule:
-    - cron: "*/15 * * * *"
+    - cron: "7,22,37,52 * * * *" # Runs at 7, 22, 37, and 52 minutes past the hour
   workflow_dispatch:
   
 concurrency:
